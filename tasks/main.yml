@@ -1,0 +1,63 @@
+---
+- name: Install the nitrokey-app and nitrocli packages
+  become: True
+  ansible.builtin.package:
+    name:
+      - nitrokey-app
+      - nitrocli
+      - gpg-agent
+    state: present
+
+- name: Make sure the user systemd directory exists
+  ansible.builtin.file:
+    path: "{{ systemd_user_unit_file_path }}"
+    state: directory
+    recurse: True
+
+- name: Update the user gpg-agent systemd unit to also run the ssh-agent
+  ansible.builtin.copy:
+    dest: "{{ systemd_user_unit_file_path }}/gpg-agent.service"
+    owner: "{{ lookup('env', 'LOGNAME') }}"
+    group: "{{ lookup('env', 'LOGNAME') }}"
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=GnuPG cryptographic agent and passphrase cache
+      Documentation=man:gpg-agent(1)
+      Requires=gpg-agent-ssh.socket
+
+      [Service]
+      ExecStart=/usr/bin/gpg-agent --supervised --enable-ssh-support
+      ExecReload=/usr/bin/gpgconf --reload gpg-agent
+
+- name: Reload the systemd user service for gpg-agent
+  ansible.builtin.systemd:
+    name: gpg-agent
+    enabled: True
+    scope: user
+    daemon_reload: True
+
+- name: Create our shell rc directory
+  ansible.builtin.file:
+    path: "~/{{ guessed_shell_rc_d }}"
+    state: directory
+    owner: "{{ lookup('env', 'LOGNAME') }}"
+    group: "{{ lookup('env', 'LOGNAME') }}"
+
+- name: Create the nitrokey env file
+  ansible.builtin.copy:
+    dest: "~/{{ guessed_shell_rc_d }}/nitrokey.env"
+    owner: "{{ lookup('env', 'LOGNAME') }}"
+    group: "{{ lookup('env', 'LOGNAME') }}"
+    mode: '0644'
+    content: |
+      # Set the environment variable for gpg-agent's ssh support
+      unset SSH_AGENT_PID
+      if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
+          export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
+      fi
+
+- name: Try to guess shell rc file and add a line
+  ansible.builtin.lineinfile:
+    path: "{{ lookup('env', 'HOME') }}/{{ guessed_shell_rc }}"
+    line: "[ -f ~/{{ guessed_shell_rc_d }}/nitrokey.env ] && source ~/{{ guessed_shell_rc_d }}/nitrokey.env"

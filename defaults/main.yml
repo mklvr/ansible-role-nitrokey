@@ -1,0 +1,4 @@
+---
+systemd_user_unit_file_path: "{{ lookup('env', 'HOME' ) }}/.config/systemd/user"
+guessed_shell_rc: ".{{ lookup('env', 'SHELL') | regex_search('^.+(bash|zsh)$', '\\1' ) | first }}rc"
+guessed_shell_rc_d: "{{ guessed_shell_rc }}.d"
