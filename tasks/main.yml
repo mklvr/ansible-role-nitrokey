@@ -32,7 +32,7 @@
 
 - name: Reload the systemd user service for gpg-agent
   ansible.builtin.systemd:
-    name: gpg-agent
+    name: gpg-agent.service
     enabled: True
     scope: user
     daemon_reload: True

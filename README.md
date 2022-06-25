@@ -23,6 +23,8 @@ Including an example of how to use your role (for instance, with variables passe
       roles:
          - ansible-role-nitrokey
 
+Crucially, don't include `become: True` in the top level playbook. It will try to create things under root's systemd user namespace
+
 License
 -------
 
