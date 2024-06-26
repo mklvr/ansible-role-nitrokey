@@ -30,6 +30,9 @@
       ExecStart=/usr/bin/gpg-agent --supervised --enable-ssh-support
       ExecReload=/usr/bin/gpgconf --reload gpg-agent
 
+      [Install]
+      WantedBy=default.target
+
 - name: Reload the systemd user service for gpg-agent
   ansible.builtin.systemd:
     name: gpg-agent.service
